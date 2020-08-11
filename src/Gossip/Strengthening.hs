@@ -19,12 +19,16 @@ strengStepSoft p (a,b) = Conj [ p (a,b) , HatK a p $ Box (Call a b) (Disj [allEx
 super :: Protocol -> Protocol
 super proto (x, y) = Conj [ Neg (superExpert x cmo) , proto (x,y) ]
 
+-- | Without loss of generality. (Not always!)
+wlog :: Protocol -> Protocol
+wlog p (x, y) = if x < y then p (x, y) else Bot
+
 -- count the number of (successful, not successful) sequences
 statistics :: Protocol -> State -> (Int,Int)
-statistics proto (g,sigma) =
+statistics proto state =
   (length succSequ, length sequ - length succSequ) where
-    sequ = sequences proto (g,sigma) \\ [[]]
-    succSequ = filter (isSuccSequence (g,sigma)) sequ
+    sequ = sequences proto state \\ [[]]
+    succSequ = filter (isSuccSequence state) sequ
 
 strengthenEnough :: Int -> Strengthening -> Protocol -> State -> IO ()
 strengthenEnough k streng proto state = do
@@ -35,14 +39,14 @@ strengthenEnough k streng proto state = do
     let newproto = streng proto
     strengthenEnough (k+1) streng newproto state
 
--- strengthenEnough statistics for all graphs with k agents
+-- strengthenEnough statistics for all graphs with k agents (synchronous)
 allStatistics :: Int -> IO ()
 allStatistics k =
   mapM_
     (\(str,streng) -> do
       putStrLn $ "\n=====" ++ str ++ "=====";
       mapM_
-        (\g -> strengthenEnough 0 streng lns (g, []))
+        (\g -> strengthenEnough 0 streng lns (Sync, g, []))
         (solvableInits localLns k)
     )
     [ ("stepSoft"       , strengStepSoft )
