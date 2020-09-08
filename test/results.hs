@@ -1,6 +1,3 @@
-% !TEX root = ../../main.tex
-
-\begin{code}
 module Main where
 
 import Control.Exception (evaluate,try,IOException)
@@ -180,6 +177,25 @@ main = hspec $ do
       epistAlt 1 (wlog anyCall) (ASync, totalInit 3, parseSequence "01;12")
       `shouldBe`
       epistAlt 1 (wlog anyCall) (ASync, totalInit 3, parseSequence "01;12;02")
+    let sigma = [(0,1),(0,2),(0,3),(0,2),(0,1)] in
+      it ("4 agents ANY: " ++ ppSequence sigma ++ " makes 0 a super expert") $
+        (Sync, totalInit 4, sigma) |= superExpert 0 (wlog anyCall)
+    let sigma = parseSequence "01;02;03;04;03;02;01" in
+      it ("5 agents ANY: " ++ ppSequence sigma ++ " makes 0 a super expert") $
+        (Sync, totalInit 5, sigma) |= superExpert 0 (wlog anyCall)
+    let sigma = parseSequence "ac;ad;ac;bc;ac;bd;cd;ad" in
+      it (ppSequence sigma ++ " is NOT super successful (ANY)") $
+        (ASync, totalInit 4, sigma) |= Neg (allSuperExperts (wlog anyCall))
+    let sigma = parseSequence "ac;ad;ac;bc;ac;cd;bd;ad" in
+      it (ppSequence sigma ++ " is NOT super successful (ANY)") $
+        (ASync, totalInit 4, sigma) |= Neg (allSuperExperts (wlog anyCall))
+
+  describe "Sync vs ASync" $
+    let sigma = parseSequence "ab;cd;ac;ad;bc;ab;bd" in do
+      it ("Sync:  " ++ ppSequence sigma ++ " IS super successful (ANY)") $
+        (Sync, totalInit 4, sigma) |= allSuperExperts (wlog anyCall)
+      it ("ASync: " ++ ppSequence sigma ++ " is NOT super successful (ANY)") $
+        (ASync, totalInit 4, sigma) |= Neg (allSuperExperts (wlog anyCall))
 
 
 -- | check that epistAlt describes a reflexive, transitive, symmetric relations
@@ -189,4 +205,3 @@ checkEpistAlt a proto here = reflexive && transitive && symmetric where
   reflexive = here `elem` reachables
   transitive = all (`elem` reachables) $ concatMap (epistAlt a proto) reachables
   symmetric = all (elem here) (map (epistAlt a proto) reachables)
-\end{code}
